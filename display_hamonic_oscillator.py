@@ -7,11 +7,13 @@ def main():
         archive = p.load(f)
         dt_archive, x_archive_euler = archive["dt"], archive["x_euler"]
         x_archive_midpoint = archive["x_midpoint"]
+        x_archive_rk4 = archive["x_rk4"]
 
     plot = plt.subplot()
     plot.plot(dt_archive, x_archive_euler)
     plot.plot(dt_archive, x_archive_midpoint)
-    plot.legend(["euler", "midpoint"])
+    plot.plot(dt_archive, x_archive_rk4)
+    plot.legend(["euler", "midpoint", "rk4"])
     plot.invert_xaxis()
 
     plt.show()
