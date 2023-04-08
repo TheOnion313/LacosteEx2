@@ -5,10 +5,13 @@ import pickle as p
 def main():
     with open("harmonic_os.p", "rb") as f:
         archive = p.load(f)
-        dt_archive, x_archive = archive["dt"], archive["x"]
+        dt_archive, x_archive_euler = archive["dt"], archive["x_euler"]
+        x_archive_midpoint = archive["x_midpoint"]
 
     plot = plt.subplot()
-    plot.plot(dt_archive, x_archive)
+    plot.plot(dt_archive, x_archive_euler)
+    plot.plot(dt_archive, x_archive_midpoint)
+    plot.legend(["euler", "midpoint"])
     plot.invert_xaxis()
 
     plt.show()

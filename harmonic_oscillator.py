@@ -45,35 +45,49 @@ def midpoint_step(x, v, t, dt=DEFAULT_DT):
 
 def sim(dt=DEFAULT_DT):
     t = 0
-    x = X_0
-    v = V_0
 
-    x_archive = []
-    v_archive = []
+    x_euler = X_0
+    v_euler = V_0
+
+    x_midpoint = X_0
+    v_midpoint = V_0
+
+    x_archive_euler = []
+    v_archive_euler = []
     t_archive = []
 
+    x_archive_midpoint = []
+    v_archive_midpoint = []
+
     while t < 18.5:
-        x_archive.append(x)
-        v_archive.append(v)
         t_archive.append(t)
+        
+        x_archive_euler.append(x_euler)
+        v_archive_euler.append(v_euler)
 
-        x, v, t = euler_step(x, v, t, dt)
+        x_archive_midpoint.append(x_midpoint)
+        v_archive_midpoint.append(v_midpoint)
 
-    return x_archive, v_archive, t_archive
+        x_euler, v_euler, t = euler_step(x_euler, v_euler, t, dt)
+        x_midpoint, v_midpoint, t = midpoint_step(x_midpoint, v_midpoint, t, dt)
+
+    return x_archive_euler, v_archive_euler, t_archive, x_archive_midpoint, v_archive_midpoint
 
 
 def main():
-    x_archive = []
+    x_archive_euler = []
+    x_archive_midpoint = []
     dt_archive = []
     le = int(abs(START_DT - END_DT) // abs(DDT))
     for i, dt in enumerate(np.linspace(START_DT, END_DT, le)):
         print(f"\r{str(i / le * 100)[:5]} %\t[{'=' * int(i / le * 20)}{' ' * (20 - int(i / le * 20))}]", end='')
         res = sim(dt)
-        x_archive.append(res[0][-1])
+        x_archive_euler.append(res[0][-1])
+        x_archive_midpoint.append(res[3][-1])
         dt_archive.append(dt)
 
     with open("harmonic_os.p", "wb") as f:
-        p.dump({"dt": dt_archive, "x": x_archive}, f)
+        p.dump({"dt": dt_archive, "x_euler": x_archive_euler, "x_midpoint": x_archive_midpoint}, f)
 
 
 if __name__ == '__main__':
