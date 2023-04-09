@@ -21,9 +21,9 @@ def calc_a(x, v, t):
 
 
 def euler_step(x, v, t, dt=DEFAULT_DT):
+    a = calc_a(x, v, t)
     x += v * dt
     t += dt
-    a = calc_a(x, v, t)
     v += a * dt
 
     return x, v, t
@@ -109,7 +109,6 @@ def main():
     le = int(abs(START_DT - END_DT) // abs(DDT))
     for i, dt in enumerate(np.linspace(START_DT, END_DT, le)):
         print(f"\r{str(i / le * 100)[:5]} %\t\t[{'=' * int(i / le * 20)}{' ' * (20 - int(i / le * 20))}]", end='')
-
         res = sim(dt)
 
         x_archive_euler.append(res[0][-1])
