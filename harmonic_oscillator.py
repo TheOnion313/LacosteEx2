@@ -7,96 +7,69 @@ M = K = ALPHA = BETA = 1
 OMEGA = 1.01
 
 DEFAULT_DT = 0.001
-START_DT = 1
-END_DT = 1e-5
-DDT = -1e-5
+START_DT = 3
+END_DT = 1e-3
+DDT = -1e-3
 SIM_TIME = 18.5
 
-X_0 = 0.01
+X_0 = 1
 V_0 = 0
 
 
-def calc_a(x, v, t):
-    return (-2 * K * x + ALPHA * math.sin(OMEGA * (t + BETA * v))) / M
+def calc_a(r, t):
+    return (-2 * K * r[0] + ALPHA * math.sin(OMEGA * (t + BETA * r[1]))) / M
 
 
-def euler_step(x, v, t, dt=DEFAULT_DT):
-    a = calc_a(x, v, t)
-    x += v * dt
-    t += dt
-    v += a * dt
-
-    return x, v, t
+def f(r, t):
+    return np.array([r[1], calc_a(r, t)])
 
 
-def midpoint_step(x, v, t, dt=DEFAULT_DT):
-    mid_x = x + v * dt / 2
-    a_n1 = calc_a(x, v, t)
-    mid_v = v + a_n1 * dt / 2
+def euler_step(r, t, dt=DEFAULT_DT):
+    ddt = f(r, t)
 
-    a_n05 = calc_a(mid_x, mid_v, t + dt / 2)
-
-    new_x = x + v * dt
-    new_v = v + a_n05 * dt
-    new_t = t + dt
-
-    return new_x, new_v, new_t
+    return r + dt * ddt
 
 
-def runge_kute4(x, v, t, dt=DEFAULT_DT):
-    mid_x = x + v * dt / 2
-    k1 = calc_a(x, v, t) * dt
-    k2 = calc_a(mid_x, v + k1 / 2, t + dt / 2) * dt
-    k3 = calc_a(mid_x, v + k2 / 2, t + dt / 2) * dt
-    k4 = calc_a(x + v * dt, v + k3, t + dt)
+def midpoint_step(r, t, dt=DEFAULT_DT):
+    r_half = r + dt / 2 * f(r, t)
+    return r + dt * f(r_half, t + dt / 2)
 
-    new_x = x + v * dt
-    new_v = v + (k1 + 2 * k2 + 2 * k3 + k4) / 6
-    new_t = t + dt
 
-    return new_x, new_v, new_t
+def runge_kute4(r, t, dt=DEFAULT_DT):
+    k1 = dt * f(r, t)
+    k2 = dt * f(r + k1 / 2, t + dt / 2)
+    k3 = dt * f(r + k2 / 2, t + dt / 2)
+    k4 = dt * f(r + k3, t + dt)
+
+    return r + (k1 + 2 * k2 + 2 * k3 + k4) / 6
 
 
 def sim(dt=DEFAULT_DT):
     t = 0
 
-    x_euler = X_0
-    v_euler = V_0
-
-    x_midpoint = X_0
-    v_midpoint = V_0
-
-    x_rk4 = X_0
-    v_rk4 = V_0
+    r_euler = np.array([X_0, V_0])
+    r_midpoint = np.array([X_0, V_0])
+    r_rk4 = np.array([X_0, V_0])
 
     t_archive = []
 
-    x_archive_euler = []
-    v_archive_euler = []
-
-    x_archive_midpoint = []
-    v_archive_midpoint = []
-
-    x_archive_rk4 = []
-    v_archive_rk4 = []
+    r_archive_euler = []
+    r_archive_midpoint = []
+    r_archive_rk4 = []
 
     while t < 18.5:
         t_archive.append(t)
 
-        x_archive_euler.append(x_euler)
-        v_archive_euler.append(v_euler)
+        r_archive_euler.append(r_euler)
+        r_archive_midpoint.append(r_midpoint)
+        r_archive_rk4.append(r_rk4)
 
-        x_archive_midpoint.append(x_midpoint)
-        v_archive_midpoint.append(v_midpoint)
+        r_euler = euler_step(r_euler, t, dt)
+        r_midpoint = midpoint_step(r_midpoint, t, dt)
+        r_rk4 = runge_kute4(r_rk4, t, dt)
+        t += dt
 
-        x_archive_rk4.append(x_rk4)
-        v_archive_rk4.append(v_rk4)
-
-        x_euler, v_euler, t = euler_step(x_euler, v_euler, t, dt)
-        x_midpoint, v_midpoint, t = midpoint_step(x_midpoint, v_midpoint, t, dt)
-        x_rk4, v_rk4, t = runge_kute4(x_rk4, v_rk4, t, dt)
-
-    return x_archive_euler, v_archive_euler, t_archive, x_archive_midpoint, v_archive_midpoint, x_archive_rk4, v_archive_rk4
+    return r_archive_euler, r_archive_midpoint, r_archive_rk4, t_archive
 
 
 def main():
@@ -111,11 +84,12 @@ def main():
         print(f"\r{str(i / le * 100)[:5]} %\t\t[{'=' * int(i / le * 20)}{' ' * (20 - int(i / le * 20))}]", end='')
         res = sim(dt)
 
-        x_archive_euler.append(res[0][-1])
-        x_archive_midpoint.append(res[3][-1])
-        x_archive_rk4.append(res[5][-1])
+        x_archive_euler.append(res[0][-1][0])
+        x_archive_midpoint.append(res[1][-1][0])
+        x_archive_rk4.append(res[2][-1][0])
 
         dt_archive.append(dt)
+    print(f"\r{str(le / le * 100)[:5]} %\t\t[{'=' * int(le / le * 20)}{' ' * (20 - int(le / le * 20))}]", end='')
 
     with open("harmonic_os.p", "wb") as f:
         p.dump({"dt": dt_archive, "x_euler": x_archive_euler, "x_midpoint": x_archive_midpoint, "x_rk4": x_archive_rk4}, f)
